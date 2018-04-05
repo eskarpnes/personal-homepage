@@ -1,0 +1,20 @@
+{
+  "ethereumAddress": "0x48BbC35Ef8F1E0782fb9B6691eB12E5e7C0Cd6c5",
+  "tokens": [
+    {
+      "name": "FunFair",
+      "address": "0x419d0d8bdd9af5e606ae2232ed285aff190e711b",
+      "decimals": 8
+    },
+    {
+      "name": "Golem",
+      "address": "0xa74476443119A942dE498590Fe1f2454d7D4aC0d",
+      "decimals": 18
+    },
+    {
+      "name": "OmiseGo",
+      "address": "0xd26114cd6EE289AccF82350c8d8487fedB8A0C07",
+      "decimals": 18
+    }
+  ]
+}
