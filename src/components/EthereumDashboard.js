@@ -1,137 +1,88 @@
 import React, { Component } from 'react';
 import axios from 'axios';
-import ethereumOptions from '../data/ethereum-options.json'
+import options from '../data/options.json'
 import roundTo from 'round-to'
+import LoadingBar from "./LoadingBar";
+import WalletTable from "./WalletTable"
 
 class EthereumDashboard extends Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      apiKey: 'HYDJIIH4EC43CAE7DD8JVFN47Q29614FS8',
-      ethBalance: 0,
-      ethWorth: 0,
-      tokenBalances: [],
-      prices: {},
-      totalEthWorth: 0
+      totalApi: 2,
+      apiResponded: 0,
+      ethData: {},
+      addressInfo: {
+        address:'',
+        ETH: {
+          balance: 0
+        },
+        tokens: []
+      },
+      lastUpdate: 0
     }
   }
 
 
   componentWillMount() {
-    this.getPrices();
-    this.getEthereumBalance();
-    this.getTokenBalances();
+    this.getEthPrice();
+    this.getAddressinfo();
   }
 
-  getPrices() {
-    let cryptos = ["Ethereum"]
-    let tokens = ethereumOptions.tokens
-    for (let i = 0; i < tokens.length; i++) {
-      cryptos.push(tokens[i].name)
-    }
-    for (let i = 0; i < cryptos.length; i++) {
-      axios.get("https://api.coinmarketcap.com/v1/ticker/" + cryptos[i] + '/')
-        .then(res => {
-          let name = cryptos[i]
-          let price = res.data[0]['price_usd']
-          this.state.prices[name] = price
-      })
-    }
-  }
-
-  getEthereumBalance() {
-    let address = ethereumOptions.ethereumAddress;
-    let decimals = 10**18;
-    axios.get('https://api.etherscan.io/api?module=account&action=balance&address=' + address + '&tag=latest&apikey=' + this.state.apiKey)
+  getEthPrice() {
+    axios.get('https://api.coinmarketcap.com/v1/ticker/ethereum/')
       .then(res => {
-        let ethBalance = roundTo(res.data.result/decimals,2 );
-        let ethWorth = roundTo(ethBalance*this.state.prices['Ethereum'],2 )
-        this.setState({ethBalance: ethBalance, ethWorth: ethWorth});
+        let ethData = res.data[0];
+        this.setState({ ethData: { 'price': ethData['price_usd'], 'change': ethData['percent_change_7d'] } })
+        this.setState(prevState => {
+          return {apiResponded: prevState.apiResponded + 1}
+        })
       })
   }
 
-
-  getTokenBalances() {
-    let tokens = ethereumOptions.tokens;
-    for (let i = 0; i < tokens.length; i++) {
-      let token = tokens[i];
-      axios.get('https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=' +
-        token.address +
-        '&address=' +
-        ethereumOptions.ethereumAddress +
-        '&tag=latest&apikey=' +
-        this.state.apiKey)
+  getAddressinfo() {
+    let address = options.ethereumAddress;
+    axios.get('https://api.ethplorer.io/getAddressInfo/' + address + '/?apiKey=freekey')
       .then(res => {
-        let balance = roundTo(res.data.result/10**token.decimals, 2);
-        let worth = roundTo(balance*this.state.prices[token.name], 2)
-        let result = {name: token.name, balance: balance, worth: worth}
-        this.state.tokenBalances.push(result);
-        this.forceUpdate()
+        console.log(res)
+        this.setState({addressInfo: res.data})
+        this.setState(prevState => {
+          return {apiResponded: prevState.apiResponded + 1}
+        })
       })
-    }
   }
 
-  calculateEthPortfolio() {
+  calculatePortfolioWorth() {
     let totalWorth = 0
-    totalWorth += this.state.ethWorth
-    let tokens = this.state.tokenBalances
-    for (let i = 0; i < tokens.length; i++) {
-      totalWorth += tokens[i].worth
+    totalWorth += this.state.ethData['price']*this.state.addressInfo.ETH.balance
+    for (let i = 0; i<this.state.addressInfo.tokens.length; i++ ) {
+      let token = this.state.addressInfo.tokens[i]
+      let balance = token.balance/10**token.tokenInfo.decimals
+      let price = token.tokenInfo.price.rate
+      totalWorth += balance*price
     }
-    let totalEthWorth = roundTo(totalWorth/this.state.prices['Ethereum'],2 )
-    return totalEthWorth
+    totalWorth = roundTo(totalWorth, 2)
+    let worthInEth = roundTo(totalWorth/this.state.ethData['price'], 2)
+    return {totalWorth: totalWorth, worthInEth: worthInEth}
   }
 
-  calculateDollarPortfolio(){
-    let totalWorth = 0
-    totalWorth += this.state.ethWorth
-    let tokens = this.state.tokenBalances
-    for (let i = 0; i < tokens.length; i++) {
-      totalWorth += tokens[i].worth
+  gotResponse() {
+    this.apisResponded += 1;
+    if (this.apisResponded === 2) {
+      this.finishedUpdate = true;
     }
-    return roundTo(totalWorth,2)
   }
 
   render() {
     console.log("render called")
-    let totalEthWorth = this.calculateEthPortfolio()
-    let totalWorth = this.calculateDollarPortfolio()
+    let portfolio = this.calculatePortfolioWorth()
     return (
       <div className="wallet w-50 mx-auto">
-          <h1>Wallet stats</h1>
-        <table className="table">
-          <thead>
-            <tr>
-              <th scope="col">Coin</th>
-              <th scope="col">Holding</th>
-              <th scope="col">Price</th>
-              <th scope="col">Worth</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">Ethereum</th>
-              <td>{this.state.ethBalance}</td>
-              <td>${this.state.prices['Ethereum']}</td>
-              <td>${this.state.ethWorth}</td>
-            </tr>
-            {this.state.tokenBalances.map((token,idx) =>
-              <tr>
-                <th scope="row">{token.name}</th>
-                <td>{token.balance}</td>
-                <td>${this.state.prices[token.name]}</td>
-                <td>${token.worth}</td>
-              </tr>
-            )}
-            <tr>
-              <th scope="row">Total</th>
-              <td>{totalEthWorth} eth</td>
-              <td></td>
-              <td>${totalWorth}</td>
-            </tr>
-          </tbody>
-        </table>
+        <h1>Wallet stats</h1>
+        {(this.state.apiResponded === this.state.totalApi) ?
+          (<WalletTable ethData={this.state.ethData} addressInfo={this.state.addressInfo}/>):
+          (<LoadingBar current={this.state.apiResponded} max={this.state.totalApi}/>)}
       </div>
     );
   }
