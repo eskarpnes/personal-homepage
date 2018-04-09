@@ -33,21 +33,21 @@ class WalletTable extends Component {
           <tbody>
           <tr>
             <th scope="row">Ethereum</th>
-            <td>{this.props.addressInfo.ETH.balance}</td>
+            <td>{roundTo(this.props.addressInfo.ETH.balance, 2)} ETH</td>
             <td>${this.props.ethData['price']}</td>
             <td>${roundTo(this.props.addressInfo.ETH.balance*this.props.ethData['price'], 2)}</td>
           </tr>
           {this.props.addressInfo.tokens.map((token,idx) =>
-            <tr>
+            <tr key={idx}>
               <th scope="row">{token.tokenInfo.name}</th>
-              <td>{token.balance/10**token.tokenInfo.decimals} {token.tokenInfo.symbol}</td>
+              <td>{roundTo(token.balance/10**token.tokenInfo.decimals, 2)} {token.tokenInfo.symbol}</td>
               <td>${token.tokenInfo.price.rate}</td>
               <td>${roundTo(token.balance/10**token.tokenInfo.decimals*token.tokenInfo.price.rate, 2)}</td>
             </tr>
           )}
           <tr>
             <th scope="row">Total</th>
-            <td>{portfolio.worthInEth} eth</td>
+            <td>{portfolio.worthInEth} ETH</td>
             <td></td>
             <td>${portfolio.totalWorth}</td>
           </tr>

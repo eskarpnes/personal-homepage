@@ -13,31 +13,70 @@ class EthereumDashboard extends Component {
       totalApi: 2,
       apiResponded: 0,
       ethData: {},
-      addressInfo: {
-        address:'',
-        ETH: {
-          balance: 0
-        },
-        tokens: []
-      },
+      addressInfo: {},
       lastUpdate: 0
     }
   }
 
 
   componentWillMount() {
-    this.getEthPrice();
-    this.getAddressinfo();
+    this.checkLastUpdate();
+  }
+
+  checkLastUpdate() {
+    // Unix time uber allest
+    const lastUpdate = localStorage.getItem("lastUpdate")
+    const now = Math.round((new Date()).getTime() / 1000);
+    const timeout = 60*5;
+    let timeSinceUpdate = now - lastUpdate
+    console.log("Timeout at " + timeout + " seconds.")
+    console.log("Time since last update: " + timeSinceUpdate)
+    if (timeSinceUpdate > timeout) {
+      console.log("Fetching new data.")
+      this.getEthPrice();
+      this.getAddressinfo();
+    } else {
+      console.log("Fetching data from cache.")
+      this.checkCache();
+    }
+  }
+
+  checkCache() {
+    const cachedEthData = localStorage.getItem("ethData")
+    const cachedAddressInfo = localStorage.getItem("addressInfo")
+    if (cachedEthData) {
+      this.setState({ethData: JSON.parse(cachedEthData)})
+      console.log(JSON.parse(cachedEthData))
+      this.setState(prevState => {
+        return {apiResponded: prevState.apiResponded + 1}
+      })
+    } else {
+      console.log("Empty ethdata cache, getting new data.")
+      this.getEthPrice()
+    }
+    if (cachedAddressInfo) {
+      this.setState({addressInfo: JSON.parse(cachedAddressInfo)})
+      console.log(JSON.parse(cachedAddressInfo))
+      this.setState(prevState => {
+        return {apiResponded: prevState.apiResponded + 1}
+      })
+    } else {
+      console.log("Empty addressinfo cache, getting new data.")
+      this.getAddressinfo()
+    }
   }
 
   getEthPrice() {
     axios.get('https://api.coinmarketcap.com/v1/ticker/ethereum/')
       .then(res => {
         let ethData = res.data[0];
+        console.log("Coinmarketcap responded.")
         this.setState({ ethData: { 'price': ethData['price_usd'], 'change': ethData['percent_change_7d'] } })
         this.setState(prevState => {
           return {apiResponded: prevState.apiResponded + 1}
         })
+        localStorage.setItem("ethData", JSON.stringify({ 'price': ethData['price_usd'], 'change': ethData['percent_change_7d'] }))
+        localStorage.setItem("lastUpdate", Math.round((new Date()).getTime() / 1000))
       })
   }
 
@@ -45,11 +84,13 @@ class EthereumDashboard extends Component {
     let address = options.ethereumAddress;
     axios.get('https://api.ethplorer.io/getAddressInfo/' + address + '/?apiKey=freekey')
       .then(res => {
-        console.log(res)
+        console.log("Ethplorer responded.")
         this.setState({addressInfo: res.data})
         this.setState(prevState => {
           return {apiResponded: prevState.apiResponded + 1}
         })
+        localStorage.setItem("addressInfo", JSON.stringify(res.data))
+        localStorage.setItem("lastUpdate", Math.round((new Date()).getTime() / 1000))
       })
   }
 
@@ -67,18 +108,9 @@ class EthereumDashboard extends Component {
     return {totalWorth: totalWorth, worthInEth: worthInEth}
   }
 
-  gotResponse() {
-    this.apisResponded += 1;
-    if (this.apisResponded === 2) {
-      this.finishedUpdate = true;
-    }
-  }
-
   render() {
-    console.log("render called")
-    let portfolio = this.calculatePortfolioWorth()
     return (
-      <div className="wallet w-50 mx-auto">
+      <div className="w-50 mx-auto">
         <h1>Wallet stats</h1>
         {(this.state.apiResponded === this.state.totalApi) ?
           (<WalletTable ethData={this.state.ethData} addressInfo={this.state.addressInfo}/>):
