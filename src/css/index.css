@@ -1,5 +1,22 @@
 body {
+  color: white;
+  background-color: black;
   margin: 0;
   padding: 0;
   font-family: sans-serif;
 }
+
+#bg {
+  position: absolute;
+  width: 100%; 
+  top: 0;
+  left: 0;
+  height: 100%;
+  /* background-color: black !important; */
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  filter: blur(100px);
+  z-index: -1;
+}
+
