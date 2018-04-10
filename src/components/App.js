@@ -3,6 +3,7 @@ import '../css/App.css';
 import EthereumDashboard from "./EthereumDashboard";
 import Weather from './Weather';
 import Shortcuts from './Shortcuts'
+import Weather from "./Weather";
 
 class App extends Component {
   render() {
@@ -10,6 +11,7 @@ class App extends Component {
       <div className="App">
         <Weather />
         <EthereumDashboard/>
+        <Weather/>
         <Shortcuts/>
       </div>
     );
