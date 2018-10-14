@@ -1,5 +1,5 @@
 import React, {Component} from "react"
-import YQL from "yql"
+//import YQL from "yql"
 
 class Weather extends Component {
   componentWillMount() {
