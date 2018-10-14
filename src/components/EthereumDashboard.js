@@ -85,6 +85,14 @@ class EthereumDashboard extends Component {
     axios.get('https://api.ethplorer.io/getAddressInfo/' + address + '/?apiKey=freekey')
       .then(res => {
         console.log("Ethplorer responded.")
+        let tokens = []
+        res.data.tokens.forEach(function(token) {
+          if(token.tokenInfo.price !== false) {
+            tokens.push(token)
+          }
+        })
+        console.log(tokens)
+        res.data.tokens = tokens
         this.setState({addressInfo: res.data})
         this.setState(prevState => {
           return {apiResponded: prevState.apiResponded + 1}
